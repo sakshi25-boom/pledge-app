@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pledge Piggy Bank</title>
+
+  <!-- MOBILE FIT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #fdfbfb, #ebedee);
+      margin: 0;
+      padding: 0;
+    }
+
+    .app {
+      min-height: 100vh;
+      max-width: 420px;
+      margin: auto;
+      padding: 20px;
+      box-sizing: border-box;
+      background: white;
+      text-align: center;
+    }
+
+    h1 { margin-bottom: 5px; }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .box {
+      background: #f7f9fc;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .label { font-size: 13px; color: #777; }
+    .value { font-size: 22px; font-weight: bold; }
+
+    .message {
+      font-size: 14px;
+      margin: 15px 0;
+      min-height: 40px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+    }
+
+    #notifyBtn { background: #FF9800; }
+    #restartBtn { background: #f44336; }
+    #changeNameBtn { background: #2196F3; }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <h1>🐷 Pledge Bank</h1>
+  <div class="subtitle" id="subtitle">One pledge. One habit.</div>
+
+  <div id="nameBox">
+    <input type="text" id="nameInput" placeholder="Enter your name">
+    <button id="startBtn">Start Pledge</button>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <div class="box">
+      <div class="label">Day</div>
+      <div class="value" id="day">0</div>
+    </div>
+
+    <div class="box">
+      <div class="label">Today's Pledge</div>
+      <div class="value">₹<span id="today">0</span></div>
+    </div>
+
+    <div class="box">
+      <div class="label">Total Saved</div>
+      <div class="value">₹<span id="total">0</span></div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <button id="completeBtn">I completed today’s pledge</button>
+    <button id="notifyBtn">Enable Daily Reminder</button>
+    <button id="restartBtn">Restart from Day 1</button>
+    <button id="changeNameBtn">Change User Name</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  let n = parseInt(localStorage.getItem("pledgeDay") || "0");
+  let username = localStorage.getItem("username");
+
+  function totalSaved(n) {
+    return (n * (n + 1) * (2 * n + 1)) / 6;
+  }
+
+  function getMessage(n) {
+    const name = username || "Friend";
+    if (n === 0) return "Welcome " + name + "! Let’s begin 🌱";
+    if (n <= 5) return name + ", small steps matter 💪";
+    if (n <= 10) return name + ", discipline is growing 🧠";
+    if (n <= 20) return name + ", most quit here 🔥";
+    return name + ", unstoppable 👑";
+  }
+
+  function updateUI() {
+    day.innerText = n;
+    today.innerText = n * n;
+    total.innerText = totalSaved(n);
+    message.innerText = getMessage(n);
+  }
+
+  function startApp() {
+    nameBox.style.display = "none";
+    mainApp.style.display = "block";
+    subtitle.innerText = "Welcome, " + username;
+    updateUI();
+  }
+
+  startBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    if (!name) return alert("Enter your name");
+    username = name;
+    localStorage.setItem("username", name);
+    startApp();
+  };
+
+  completeBtn.onclick = () => {
+    n++;
+    localStorage.setItem("pledgeDay", n);
+    updateUI();
+  };
+
+  restartBtn.onclick = () => {
+    if (confirm("Restart pledge?")) {
+      n = 0;
+      localStorage.setItem("pledgeDay", 0);
+      updateUI();
+    }
+  };
+
+  changeNameBtn.onclick = () => {
+    const name = prompt("New name:");
+    if (name) {
+      username = name;
+      localStorage.setItem("username", name);
+      updateUI();
+    }
+  };
+
+  notifyBtn.onclick = async () => {
+    if (!("Notification" in window)) {
+      alert("Notifications not supported");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      alert("Allow notifications to get reminders");
+      return;
+    }
+
+    const reg = await navigator.serviceWorker.ready;
+
+    setTimeout(() => {
+      reg.showNotification("Pledge Reminder 🐷", {
+        body: "Don't forget today's pledge!",
+        icon: "icon-192.png"
+      });
+    }, 10000);
+
+    alert("Reminder enabled (test in 10 sec) ✅");
+  };
+
+  if (username) startApp();
+});
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
